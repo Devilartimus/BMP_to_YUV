@@ -4,9 +4,19 @@
 #include "Video.h"
 #include "Image.h"
 
+#include <string>
+
 class Processor
 {
+public:
 
+    Processor(const std::string& VideoPath, const std::string& ImagePath);
+    void process(const std::string& outputFileName);
+
+private:
+
+    Video video;
+    Image image;
 };
 
 #endif // PROCESSOR_H
