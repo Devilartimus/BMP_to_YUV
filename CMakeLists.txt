@@ -5,7 +5,13 @@ project(BMP_to_YUV LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-add_executable(BMP_to_YUV main.cpp)
+add_executable(BMP_to_YUV main.cpp
+    Image.h
+    Image.cpp
+    Video.h
+    Video.cpp
+    Processor.h
+    Processor.cpp)
 
 include(GNUInstallDirs)
 install(TARGETS BMP_to_YUV
