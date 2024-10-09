@@ -21,7 +21,7 @@ private:
     int _WIDTH;
     int _HEIGHT;
 
-    void loadBM(const std::string& fileName);
+    void loadBMP(const std::string& fileName);
     void RGBtoYUV();
 
 };
