@@ -1,8 +1,5 @@
 #include "Video.h"
 
-#include <iostream>
-#include <fstream>
-
 Video::Video (const string& fileName)
 {
     loadYUV(fileName);
@@ -30,7 +27,7 @@ const vector<unsigned char>& Video::getYUVData() const
  */
 void Video::loadYUV(const string& fileName)
 {
-    ifstream file(fileName);
+    ifstream file(fileName, ios::binary);
 
     if (!file)
     {
@@ -48,5 +45,12 @@ void Video::loadYUV(const string& fileName)
     _YUV_DATA.resize(fileSize);
 
     file.read(reinterpret_cast<char*>(_YUV_DATA.data()), _YUV_DATA.size());
+
+    if (file.gcount() != _YUV_DATA.size())
+    {
+        cerr << "Error: Incomplete YUV data read." << endl;
+        return;
+    }
+
     file.close();
 }

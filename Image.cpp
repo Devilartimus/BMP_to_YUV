@@ -16,7 +16,7 @@ Image::Image(const string& fileName)
  */
 void Image::loadBMP(const string& fileName)
 {
-    ifstream file(fileName);
+    ifstream file(fileName, ios::binary);
 
     if (!file)
     {
@@ -34,8 +34,8 @@ void Image::loadBMP(const string& fileName)
         return;
     }
 
-    _WIDTH = *(int*)&header[18];
-    _HEIGHT = *(int*)&header[22];
+    memcpy(&_WIDTH, &header[18], sizeof(_WIDTH));
+    memcpy(&_HEIGHT, &header[22], sizeof(_HEIGHT));
 
     if (_WIDTH <= 0 || _HEIGHT <= 0)
     {
@@ -43,14 +43,12 @@ void Image::loadBMP(const string& fileName)
         return;
     }
 
-    _RGB_DATA.resize(_WIDTH * _HEIGHT * 3);
+    int rowSize = (_WIDTH * 3 + 3) & (~3);
+    _RGB_DATA.resize(rowSize * _HEIGHT);
 
-    file.read(reinterpret_cast<char*>(_RGB_DATA.data()), _RGB_DATA.size());
-
-    if (file.gcount() != _RGB_DATA.size())
+    for (int i = 0; i < _HEIGHT; ++i)
     {
-        cerr << "Error: Incomplete RGB data read from BMP." << endl;
-        return;
+        file.read(reinterpret_cast<char*>(&_RGB_DATA[(_HEIGHT - 1 - i) * rowSize]), rowSize);
     }
 
     file.close();
@@ -82,16 +80,16 @@ const std::vector<unsigned char>& Image::getRGBData() const
  */
 void Image::RGBtoYUV()
 {
-    _YUV_DATA.resize(_WIDTH * _HEIGHT * (3 / 2));
+    _YUV_DATA.resize(_WIDTH * _HEIGHT * 1.5);
 
     int uvWidth = _WIDTH / 2;
     int uvHeight = _HEIGHT / 2;
 
     for (int i = 0; i < _RGB_DATA.size() / 3; i++)
     {
-        int r = _RGB_DATA[i * 3];
+        int r = _RGB_DATA[i * 3 + 2];
         int g = _RGB_DATA[i * 3 + 1];
-        int b = _RGB_DATA[i * 3 + 2];
+        int b = _RGB_DATA[i * 3];
 
         int y = 0.299 * r + 0.587 * g + 0.114 * b ;
         y = (y < 0) ? 0 : (y > 255) ? 255 : y;
