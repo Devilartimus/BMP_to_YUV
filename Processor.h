@@ -6,12 +6,18 @@
 
 #include <string>
 
+using namespace std;
+
 class Processor
 {
 public:
 
-    Processor(const std::string& VideoPath, const std::string& ImagePath);
-    void process(const std::string& outputFileName);
+    Processor(const string& VideoPath, const string& ImagePath);
+
+    void overlayImage(const vector<unsigned char>& imageYUV, int imageWidth, int imageHeight, int x, int y);
+    void process(const string& outputFileName);
+    void save(const string& outputFileName);
+
 
 private:
 

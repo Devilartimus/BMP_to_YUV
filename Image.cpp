@@ -3,8 +3,6 @@
 #include <iostream>
 #include <fstream>
 
-using namespace std;
-
 Image::Image(const string& fileName)
 {
     loadBMP(fileName);
@@ -78,6 +76,10 @@ const std::vector<unsigned char>& Image::getRGBData() const
     return _RGB_DATA;
 }
 
+/**
+ * @brief Image::RGBtoYUV
+ * converting MN RGB to YUV according to YUV documentation
+ */
 void Image::RGBtoYUV()
 {
     _YUV_DATA.resize(_WIDTH * _HEIGHT * (3 / 2));

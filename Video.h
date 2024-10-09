@@ -4,21 +4,26 @@
 #include <string>
 #include <vector>
 
+using namespace std;
+
 class Video
 {
 public:
 
-    Video(const std::string& fileName);
-    void overlayImage(const std::vector<unsigned char>& imageYUV, int imageWidth, int imageHeight, int x, int y);
-    void save(const std::string& outputFileName);
+    Video(const string& fileName);
+
+    int getWidth() const;
+    int getHeight() const;
+
+    const std::vector<unsigned char>& getYUVData() const;
 
 private:
 
-    std::vector<unsigned char> _YUV_DATA;
+    vector<unsigned char> _YUV_DATA;
     int _WIDTH;
     int _HEIGHT;
 
-    void loadYUV(const std::string& fileName);
+    void loadYUV(const string& fileName);
 };
 
 #endif // VIDEO_H

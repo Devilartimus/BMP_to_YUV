@@ -4,25 +4,27 @@
 #include <string>
 #include <vector>
 
+using namespace std;
+
 class Image
 {
 public:
 
-    Image(const std::string& fileName);
+    Image(const string& fileName);
 
-    const std::vector<unsigned char>& getYUVData() const;
-    const std::vector<unsigned char>& getRGBData() const;
+    const vector<unsigned char>& getYUVData() const;
+    const vector<unsigned char>& getRGBData() const;
     int getWidth() const;
     int getHeight() const;
 
 private:
 
-    std::vector<unsigned char> _RGB_DATA;
-    std::vector<unsigned char> _YUV_DATA;
+    vector<unsigned char> _RGB_DATA;
+    vector<unsigned char> _YUV_DATA;
     int _WIDTH;
     int _HEIGHT;
 
-    void loadBMP(const std::string& fileName);
+    void loadBMP(const string& fileName);
     void RGBtoYUV();
 
 };
