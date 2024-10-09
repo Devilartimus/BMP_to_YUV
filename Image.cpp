@@ -61,14 +61,14 @@ void Image::loadBMP(const string& fileName)
             return;
         }
 
-        // Копируем пиксельные данные с учетом переворота изображения по вертикали
+
         for (int j = 0; j < _WIDTH; ++j)
         {
             int sourceIndex = j * 3;
             int targetIndex = ((_HEIGHT - 1 - i) * _WIDTH + j) * 3;
-            _RGB_DATA[targetIndex] = rowBuffer[sourceIndex];          // Синий
-            _RGB_DATA[targetIndex + 1] = rowBuffer[sourceIndex + 1];  // Зеленый
-            _RGB_DATA[targetIndex + 2] = rowBuffer[sourceIndex + 2];  // Красный
+            _RGB_DATA[targetIndex] = rowBuffer[sourceIndex];
+            _RGB_DATA[targetIndex + 1] = rowBuffer[sourceIndex + 1];
+            _RGB_DATA[targetIndex + 2] = rowBuffer[sourceIndex + 2];
         }
     }
 
