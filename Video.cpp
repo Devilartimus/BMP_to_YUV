@@ -42,9 +42,17 @@ void Video::loadYUV(const string& fileName)
     _HEIGHT = 288;
     _WIDTH =  352;
 
+    int frameSize = _WIDTH * _HEIGHT * 3 / 2;
+
+    if (fileSize % frameSize != 0)
+    {
+        cerr << "Error: File size is not a multiple of the frame size. Check video dimensions." << endl;
+        return;
+    }
+
     _YUV_DATA.resize(fileSize);
 
-    file.read(reinterpret_cast<char*>(_YUV_DATA.data()), _YUV_DATA.size());
+     file.read(reinterpret_cast<char*>(_YUV_DATA.data()), _YUV_DATA.size());
 
     if (file.gcount() != _YUV_DATA.size())
     {

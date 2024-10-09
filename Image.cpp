@@ -16,11 +16,11 @@ Image::Image(const string& fileName)
  */
 void Image::loadBMP(const string& fileName)
 {
-    ifstream file(fileName, ios::binary);
+    ifstream file(fileName, ios::binary | ios::in);
 
     if (!file)
     {
-        cerr << "Error while opening BMPP input file" <<endl;
+        cerr << "Error while opening BMP input file" <<endl;
         return;
     }
 
@@ -43,12 +43,33 @@ void Image::loadBMP(const string& fileName)
         return;
     }
 
+    uint32_t offsetData;
+    memcpy(&offsetData, &header[10], sizeof(offsetData));
+
+    file.seekg(offsetData, ios::beg);
+
     int rowSize = (_WIDTH * 3 + 3) & (~3);
-    _RGB_DATA.resize(rowSize * _HEIGHT);
+    _RGB_DATA.resize(_WIDTH * _HEIGHT * 3);
+    std::vector<unsigned char> rowBuffer(rowSize);
 
     for (int i = 0; i < _HEIGHT; ++i)
     {
-        file.read(reinterpret_cast<char*>(&_RGB_DATA[(_HEIGHT - 1 - i) * rowSize]), rowSize);
+        file.read(reinterpret_cast<char*>(rowBuffer.data()), rowSize);
+        if (file.gcount() != rowSize)
+        {
+            cerr << "Error: not enough data read for row " << i << endl;
+            return;
+        }
+
+        // Копируем пиксельные данные с учетом переворота изображения по вертикали
+        for (int j = 0; j < _WIDTH; ++j)
+        {
+            int sourceIndex = j * 3;
+            int targetIndex = ((_HEIGHT - 1 - i) * _WIDTH + j) * 3;
+            _RGB_DATA[targetIndex] = rowBuffer[sourceIndex];          // Синий
+            _RGB_DATA[targetIndex + 1] = rowBuffer[sourceIndex + 1];  // Зеленый
+            _RGB_DATA[targetIndex + 2] = rowBuffer[sourceIndex + 2];  // Красный
+        }
     }
 
     file.close();
@@ -91,7 +112,7 @@ void Image::RGBtoYUV()
         int g = _RGB_DATA[i * 3 + 1];
         int b = _RGB_DATA[i * 3];
 
-        int y = 0.299 * r + 0.587 * g + 0.114 * b ;
+        int y = static_cast<int>(0.299 * r + 0.587 * g + 0.114 * b);
         y = (y < 0) ? 0 : (y > 255) ? 255 : y;
 
         _YUV_DATA[i] = y;
@@ -112,28 +133,39 @@ void Image::RGBtoYUV()
                 for (int x = 0; x < 2; x++)
                 {
                     int pixelIndex = (yIndex + y * _WIDTH + x) * 3;
-                    int r = _RGB_DATA[pixelIndex];
-                    int b = _RGB_DATA[pixelIndex + 2];
+
+                    if (pixelIndex >= _RGB_DATA.size())
+                    {
+                        cerr << "Error: pixelIndex out of range" << endl;
+                        continue;
+                    }
+
+                    int b = _RGB_DATA[pixelIndex];
+                    int g = _RGB_DATA[pixelIndex + 1];
+                    int r = _RGB_DATA[pixelIndex + 2];
 
                     sumR += r;
+                    sumG += g;
                     sumB += b;
                 }
             }
 
             int avgR = sumR / 4;
+            int avgG = sumG / 4;
             int avgB = sumB / 4;
 
             int avgY = _YUV_DATA[yIndex];
 
-            int u = (0.492 * (avgB - avgY)) + 128;
+            int u = static_cast<int>(-0.14713 * avgR - 0.28886 * avgG + 0.436 * avgB + 128);;
             u = (u < 0) ? 0 : (u > 255) ? 255 : u;
 
-            int v = (0.887 * (avgR - avgY)) + 128;
+            int v = static_cast<int>(0.615 * avgR - 0.51499 * avgG - 0.10001 * avgB + 128);;
             v = (v < 0) ? 0 : (v > 255) ? 255 : v;
 
             _YUV_DATA[uIndex] = u;
             _YUV_DATA[vIndex] = v;
         }
     }
-
 }
+
+
