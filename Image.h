@@ -5,6 +5,7 @@
 #include <vector>
 #include <iostream>
 #include <fstream>
+#include <thread>
 
 using namespace std;
 
@@ -20,6 +21,9 @@ public:
     const vector<unsigned char>& getRGBData() const;
 
 private:
+
+    void processY();
+    void processUV();
 
     void loadBMP(const string& fileName);
     void RGBtoYUV();

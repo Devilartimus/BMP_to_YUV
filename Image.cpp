@@ -96,16 +96,12 @@ const std::vector<unsigned char>& Image::getRGBData() const
 }
 
 /**
- * @brief Image::RGBtoYUV
- * converting MN RGB to YUV according to YUV documentation
+ * @brief Image::processY - processing RGB -> Y in one thread
+ * @param startRow
+ * @param endRow
  */
-void Image::RGBtoYUV()
+void Image::processY()
 {
-    _YUV_DATA.resize(_WIDTH * _HEIGHT * 1.5);
-
-    int uvWidth = _WIDTH / 2;
-    int uvHeight = _HEIGHT / 2;
-
     for (int i = 0; i < _RGB_DATA.size() / 3; i++)
     {
         int r = _RGB_DATA[i * 3 + 2];
@@ -117,6 +113,17 @@ void Image::RGBtoYUV()
 
         _YUV_DATA[i] = y;
     }
+}
+
+/**
+ * @brief Image::processUV - processing RGB -> U and V in other thread
+ * @param startRow
+ * @param endRow
+ */
+void Image::processUV()
+{
+    int uvWidth = _WIDTH / 2;
+    int uvHeight = _HEIGHT / 2;
 
     for (int i = 0; i < uvHeight; i++)
     {
@@ -154,12 +161,10 @@ void Image::RGBtoYUV()
             int avgG = sumG / 4;
             int avgB = sumB / 4;
 
-            int avgY = _YUV_DATA[yIndex];
-
-            int u = static_cast<int>(-0.14713 * avgR - 0.28886 * avgG + 0.436 * avgB + 128);;
+            int u = static_cast<int>(-0.14713 * avgR - 0.28886 * avgG + 0.436 * avgB + 128);
             u = (u < 0) ? 0 : (u > 255) ? 255 : u;
 
-            int v = static_cast<int>(0.615 * avgR - 0.51499 * avgG - 0.10001 * avgB + 128);;
+            int v = static_cast<int>(0.615 * avgR - 0.51499 * avgG - 0.10001 * avgB + 128);
             v = (v < 0) ? 0 : (v > 255) ? 255 : v;
 
             _YUV_DATA[uIndex] = u;
@@ -168,4 +173,18 @@ void Image::RGBtoYUV()
     }
 }
 
+/**
+ * @brief Image::RGBtoYUV
+ * converting MN RGB to YUV according to YUV documentation
+ */
+void Image::RGBtoYUV()
+{
+    _YUV_DATA.resize(_WIDTH * _HEIGHT * 1.5);
+
+    std::thread yThread(&Image::processY, this);
+    std::thread uvThread(&Image::processUV, this);
+
+    yThread.join();
+    uvThread.join();
+}
 
