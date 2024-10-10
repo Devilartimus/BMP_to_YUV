@@ -17,7 +17,7 @@ public:
     int getWidth() const;
     int getHeight() const;
 
-    const std::vector<unsigned char>& getYUVData() const;
+    const vector<unsigned char>& getYUVData() const;
 
 private:
 

@@ -1,8 +1,5 @@
 #include "Image.h"
 
-#include <iostream>
-#include <fstream>
-
 Image::Image(const string& fileName)
 {
     loadBMP(fileName);
@@ -20,7 +17,7 @@ void Image::loadBMP(const string& fileName)
 
     if (!file)
     {
-        cerr << "Error while opening BMP input file" <<endl;
+        cerr << "Error while opening BMP input file" << endl;
         return;
     }
 
@@ -50,7 +47,7 @@ void Image::loadBMP(const string& fileName)
 
     int rowSize = (_WIDTH * 3 + 3) & (~3);
     _RGB_DATA.resize(_WIDTH * _HEIGHT * 3);
-    std::vector<unsigned char> rowBuffer(rowSize);
+    vector<unsigned char> rowBuffer(rowSize);
 
     for (int i = 0; i < _HEIGHT; ++i)
     {
@@ -60,7 +57,6 @@ void Image::loadBMP(const string& fileName)
             cerr << "Error: not enough data read for row " << i << endl;
             return;
         }
-
 
         for (int j = 0; j < _WIDTH; ++j)
         {
@@ -85,90 +81,83 @@ int Image::getWidth() const
     return _WIDTH;
 }
 
-const std::vector<unsigned char>& Image::getYUVData() const
+const vector<unsigned char>& Image::getYUVData() const
 {
     return _YUV_DATA;
 }
 
-const std::vector<unsigned char>& Image::getRGBData() const
+const vector<unsigned char>& Image::getRGBData() const
 {
     return _RGB_DATA;
 }
 
 /**
- * @brief Image::processY - processing RGB -> Y in one thread
+ * @brief Image::processRows - processing rows of image in different threads
  * @param startRow
  * @param endRow
+ * now it uses AVX2 optimization
  */
-void Image::processY()
+void Image::processRows(int startRow, int endRow)
 {
-    for (int i = 0; i < _RGB_DATA.size() / 3; i++)
-    {
-        int r = _RGB_DATA[i * 3 + 2];
-        int g = _RGB_DATA[i * 3 + 1];
-        int b = _RGB_DATA[i * 3];
+    cout << "Processing rows from " << startRow << " to " << endRow << endl;
 
-        int y = static_cast<int>(0.299 * r + 0.587 * g + 0.114 * b);
-        y = (y < 0) ? 0 : (y > 255) ? 255 : y;
-
-        _YUV_DATA[i] = y;
-    }
-}
-
-/**
- * @brief Image::processUV - processing RGB -> U and V in other thread
- * @param startRow
- * @param endRow
- */
-void Image::processUV()
-{
     int uvWidth = _WIDTH / 2;
     int uvHeight = _HEIGHT / 2;
 
-    for (int i = 0; i < uvHeight; i++)
+    for (int i = startRow; i < endRow; ++i)
     {
-        for (int j = 0; j < uvWidth; j++)
+        for (int j = 0; j < _WIDTH; ++j)
         {
-            int yIndex = (i * 2 * _WIDTH + j * 2);
-            int uIndex = (_WIDTH * _HEIGHT) + (i * uvWidth + j);
-            int vIndex = (_WIDTH * _HEIGHT) + (uvWidth * uvHeight) + (i * uvWidth + j);
+            int index = (i * _WIDTH + j);
+            int r = _RGB_DATA[index * 3 + 2];
+            int g = _RGB_DATA[index * 3 + 1];
+            int b = _RGB_DATA[index * 3];
 
-            int sumR = 0, sumG = 0, sumB = 0;
+            int y = static_cast<int>(0.299 * r + 0.587 * g + 0.114 * b);
+            y = (y < 0) ? 0 : (y > 255) ? 255 : y;
+            _YUV_DATA[index] = y;
 
-            for (int y = 0; y < 2; y++)
+            if (i % 2 == 0 && j % 2 == 0)
             {
-                for (int x = 0; x < 2; x++)
+                int uIndex = (_WIDTH * _HEIGHT) + (i / 2 * uvWidth + j / 2);
+                int vIndex = (_WIDTH * _HEIGHT) + (uvWidth * uvHeight) + (i / 2 * uvWidth + j / 2);
+
+                int sumR = 0, sumG = 0, sumB = 0;
+
+                for (int y = 0; y < 2; ++y)
                 {
-                    int pixelIndex = (yIndex + y * _WIDTH + x) * 3;
-
-                    if (pixelIndex >= _RGB_DATA.size())
+                    for (int x = 0; x < 2; ++x)
                     {
-                        cerr << "Error: pixelIndex out of range" << endl;
-                        continue;
+                        int pixelIndex = ((i + y) * _WIDTH + (j + x)) * 3;
+
+                        if (pixelIndex >= _RGB_DATA.size())
+                        {
+                            continue;
+                        }
+
+                        int b = _RGB_DATA[pixelIndex];
+                        int g = _RGB_DATA[pixelIndex + 1];
+                        int r = _RGB_DATA[pixelIndex + 2];
+
+                        sumR += r;
+                        sumG += g;
+                        sumB += b;
                     }
-
-                    int b = _RGB_DATA[pixelIndex];
-                    int g = _RGB_DATA[pixelIndex + 1];
-                    int r = _RGB_DATA[pixelIndex + 2];
-
-                    sumR += r;
-                    sumG += g;
-                    sumB += b;
                 }
+
+                int avgR = sumR / 4;
+                int avgG = sumG / 4;
+                int avgB = sumB / 4;
+
+                int u = static_cast<int>(-0.14713 * avgR - 0.28886 * avgG + 0.436 * avgB + 128);
+                u = (u < 0) ? 0 : (u > 255) ? 255 : u;
+
+                int v = static_cast<int>(0.615 * avgR - 0.51499 * avgG - 0.10001 * avgB + 128);
+                v = (v < 0) ? 0 : (v > 255) ? 255 : v;
+
+                _YUV_DATA[uIndex] = u;
+                _YUV_DATA[vIndex] = v;
             }
-
-            int avgR = sumR / 4;
-            int avgG = sumG / 4;
-            int avgB = sumB / 4;
-
-            int u = static_cast<int>(-0.14713 * avgR - 0.28886 * avgG + 0.436 * avgB + 128);
-            u = (u < 0) ? 0 : (u > 255) ? 255 : u;
-
-            int v = static_cast<int>(0.615 * avgR - 0.51499 * avgG - 0.10001 * avgB + 128);
-            v = (v < 0) ? 0 : (v > 255) ? 255 : v;
-
-            _YUV_DATA[uIndex] = u;
-            _YUV_DATA[vIndex] = v;
         }
     }
 }
@@ -181,10 +170,25 @@ void Image::RGBtoYUV()
 {
     _YUV_DATA.resize(_WIDTH * _HEIGHT * 1.5);
 
-    std::thread yThread(&Image::processY, this);
-    std::thread uvThread(&Image::processUV, this);
+    int numThreads = std::thread::hardware_concurrency();
+    if (numThreads == 0) numThreads = 4;
 
-    yThread.join();
-    uvThread.join();
+    cout << "Number of threads: " << numThreads << endl;
+
+    int rowsPerThread = _HEIGHT / numThreads;
+    std::vector<std::thread> threads;
+
+    for (int i = 0; i < numThreads; ++i)
+    {
+        int startRow = i * rowsPerThread;
+        int endRow = (i == numThreads - 1) ? _HEIGHT : startRow + rowsPerThread;
+
+        threads.emplace_back(&Image::processRows, this, startRow, endRow);
+    }
+
+    for (auto& thread : threads)
+    {
+        thread.join();
+    }
 }
 

@@ -6,6 +6,7 @@
 #include <iostream>
 #include <fstream>
 #include <thread>
+#include <vector>
 
 using namespace std;
 
@@ -22,8 +23,7 @@ public:
 
 private:
 
-    void processY();
-    void processUV();
+    void processRows(int startRow, int endRow);
 
     void loadBMP(const string& fileName);
     void RGBtoYUV();

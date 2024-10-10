@@ -10,8 +10,8 @@ class Processor
 {
 public:
 
-    Processor(const std::string& VideoPath, const std::string& ImagePath);
-    void process(const std::string& outputFileName);
+    Processor(const string& VideoPath, const string& ImagePath);
+    void process(const string& outputFileName);
     void overlayImage ();
     void save (const string& outputFileName);
 
